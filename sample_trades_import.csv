@@ -1,0 +1,11 @@
+Symbol,AssetClass,Direction,Status,EntryDate,ExitDate,EntryPrice,ExitPrice,Quantity,StopLoss,TakeProfit,Fees,Strategy,Emotion,Notes
+BTC/USDT,Crypto,Long,Closed,2026-08-15T09:30:00.000Z,2026-08-15T16:45:00.000Z,58400,61200,0.4,57500,61500,10.50,Support Bounce,Disciplined,"Clean 4H double bottom breakout with high volume"
+NVDA,Stocks,Long,Closed,2026-08-16T14:30:00.000Z,2026-08-16T18:00:00.000Z,118.20,126.50,150,115.00,128.00,3.20,Earnings Momentum,Patient,"Held through initial consolidation above VWAP"
+NQ_FUT,Futures,Short,Closed,2026-08-19T13:45:00.000Z,2026-08-19T14:20:00.000Z,19780,19690,2,19820,19650,8.00,London High Sweep,Calm,"Rejection at key liquidity pool during session open"
+TSLA,Stocks,Short,Closed,2026-08-21T15:10:00.000Z,2026-08-21T15:40:00.000Z,215.00,219.50,100,218.00,208.00,4.00,Mean Reversion,FOMO,"Chased late after the move already started. Slipped past stop"
+EUR/USD,Forex,Long,Closed,2026-08-23T08:00:00.000Z,2026-08-23T13:30:00.000Z,1.0840,1.0910,100000,1.0815,1.0930,6.50,Trend Continuation,Disciplined,"Clean higher lows structure on 1H chart"
+SOL/USDT,Crypto,Long,Closed,2026-08-26T11:00:00.000Z,2026-08-27T04:15:00.000Z,138.50,152.00,40,134.00,155.00,5.80,Breakout,Patient,"Multi-day compression wedge breakout"
+ES_FUT,Futures,Long,Closed,2026-08-28T14:00:00.000Z,2026-08-28T15:15:00.000Z,5580,5612,2,5568,5620,7.50,VWAP Reclaim,Calm,"Morning dip bought aggressively at daily pivot"
+AMD,Stocks,Long,Closed,2026-08-30T14:45:00.000Z,2026-08-30T15:30:00.000Z,146.00,144.20,120,144.50,151.00,2.80,Breakout,Hesitant,"Hesitated on entry, got bad fill and cut when market dipped"
+ETH/USDT,Crypto,Short,Closed,2026-09-02T10:15:00.000Z,2026-09-02T18:00:00.000Z,2540,2460,3.0,2575,2440,8.20,Range Breakdown,Disciplined,"Rejected firmly at $2550 resistance level"
+META,Stocks,Long,Closed,2026-09-03T14:30:00.000Z,2026-09-03T19:00:00.000Z,510.00,528.00,30,502.00,530.00,3.50,Gap & Go,Patient,"Strong relative strength during overall market weakness"

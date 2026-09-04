@@ -38,25 +38,25 @@ export function StatCard({
     <motion.div
       whileHover={{ y: -2 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-      className={`glass-panel relative rounded-2xl p-5 border transition-all duration-200 overflow-hidden group shadow-sm ${toneBorder[tone]}`}
+      className={`glass-panel relative rounded-2xl p-3.5 sm:p-5 border transition-all duration-200 overflow-hidden group shadow-sm ${toneBorder[tone]}`}
       title={tooltip}
     >
-      <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-        <span className="text-xs font-semibold uppercase tracking-wider">{title}</span>
+      <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1.5 sm:mb-2">
+        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">{title}</span>
         {icon && (
-          <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 transition-transform group-hover:scale-110">
+          <div className="p-1.5 sm:p-2 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 transition-transform group-hover:scale-110">
             {icon}
           </div>
         )}
       </div>
 
-      <div className="flex items-baseline gap-2">
-        <span className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ${toneText[tone]}`}>
+      <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+        <span className={`text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight tabular-nums ${toneText[tone]}`}>
           {value}
         </span>
         {trend && (
           <span
-            className={`text-xs font-semibold ${
+            className={`text-[10px] sm:text-xs font-semibold ${
               trend === 'up'
                 ? 'text-emerald-500'
                 : trend === 'down'

@@ -120,25 +120,25 @@ export function Navbar({
               size="sm"
               onClick={onOpenImportExport}
               icon={<FileSpreadsheet className="w-3.5 h-3.5" />}
-              className="text-xs"
+              className="px-2.5 sm:px-3.5 text-xs"
               title="Import CSV or Export Data"
             >
-              <span className="hidden sm:inline">Data & CSV</span>
+              <span className="hidden md:inline">Data & CSV</span>
             </Button>
 
             {/* ⚡ Scalper Mode Toggle */}
             <button
               onClick={onToggleScalperMode}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                 isScalperMode
                   ? 'bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/50 shadow-sm ring-1 ring-amber-500/30'
                   : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white'
               }`}
-              title={isScalperMode ? 'Scalper Mode Active (Click to switch to Standard)' : 'Switch to Scalper Mode (Rapid Entry & Tilt Guard)'}
+              title={isScalperMode ? 'Scalper Mode Active' : 'Switch to Scalper Mode'}
             >
               <Zap className={`w-3.5 h-3.5 ${isScalperMode ? 'fill-amber-400 text-amber-400 animate-pulse' : ''}`} />
               <span className="hidden sm:inline">
-                {isScalperMode ? '⚡ Scalper Mode' : 'Scalper Mode'}
+                {isScalperMode ? '⚡ Scalp Mode' : 'Scalper Mode'}
               </span>
             </button>
 
@@ -146,7 +146,7 @@ export function Navbar({
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               aria-label="Toggle theme"
             >
@@ -163,15 +163,16 @@ export function Navbar({
               size="sm"
               onClick={onOpenNewTrade}
               icon={<Plus className="w-4 h-4 stroke-[2.5]" />}
-              className="text-xs font-semibold shadow-glow-brand"
+              className="px-2.5 sm:px-3.5 text-xs font-semibold shadow-glow-brand"
             >
-              Log Trade
+              <span className="hidden xs:inline">Log Trade</span>
+              <span className="xs:hidden">Log</span>
             </Button>
           </div>
         </div>
 
         {/* Mobile Navigation bar */}
-        <div className="flex md:hidden items-center justify-around py-2 border-t border-slate-200/50 dark:border-slate-800/50">
+        <div className="flex md:hidden items-center justify-around py-1.5 border-t border-slate-200/50 dark:border-slate-800/50">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -179,7 +180,7 @@ export function Navbar({
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id as NavTab)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                   isActive
                     ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-bold'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'

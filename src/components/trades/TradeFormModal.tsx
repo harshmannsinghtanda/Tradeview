@@ -185,7 +185,7 @@ export function TradeFormModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 overflow-y-auto">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -201,15 +201,15 @@ export function TradeFormModal({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.94, opacity: 0, y: 15 }}
           transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-          className="relative w-full max-w-2xl bg-white dark:bg-[#101422] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-10 my-8"
+          className="relative w-full max-w-2xl bg-white dark:bg-[#101422] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-10 my-4 sm:my-8"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800/80">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 dark:border-slate-800/80">
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 {initialTrade ? 'Edit Trade Entry' : 'Log New Execution'}
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 Record exact execution prices, parameters, and psychological state
               </p>
             </div>
@@ -222,7 +222,7 @@ export function TradeFormModal({
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[82vh] sm:max-h-[80vh] overflow-y-auto">
             
             {/* Top Row: Symbol, Asset Class, Direction, Status */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

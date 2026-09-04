@@ -95,8 +95,8 @@ export function TradeTable({
 
   return (
     <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm overflow-hidden">
-      {/* Responsive Table wrapper */}
-      <div className="overflow-x-auto">
+      {/* Desktop Table View (≥ 768px) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-100/50 dark:bg-slate-900/50 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none">
@@ -290,10 +290,105 @@ export function TradeTable({
         </table>
       </div>
 
+      {/* Mobile Card-Based Feed (< 768px) */}
+      <div className="block md:hidden divide-y divide-slate-200/60 dark:divide-slate-800/60">
+        {paginatedTrades.map((t) => {
+          const hasPnl = t.netPnl !== undefined;
+          const isProfit = (t.netPnl ?? 0) > 0;
+          const isLoss = (t.netPnl ?? 0) < 0;
+          const dateFormatted = (t.exitDate || t.entryDate).replace('T', ' ').substring(0, 16);
+
+          return (
+            <div key={t.id} className="p-3.5 space-y-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+              {/* Card Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">
+                    {t.symbol}
+                  </span>
+                  <DirectionBadge direction={t.direction} />
+                  <AssetBadge assetClass={t.assetClass} />
+                </div>
+
+                <div className="text-right">
+                  {hasPnl && t.status === 'Closed' ? (
+                    <span className={`text-sm font-bold font-mono ${isProfit ? 'text-emerald-500' : isLoss ? 'text-rose-500' : 'text-slate-400'}`}>
+                      {isProfit ? '+' : ''}{currency}{t.netPnl?.toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-amber-500 font-semibold">Active</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Card Grid Info */}
+              <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Entry → Exit</span>
+                  <span className="font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                    {currency}{t.entryPrice} → {t.exitPrice ? `${currency}${t.exitPrice}` : 'Open'}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Size & R:R</span>
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <span>{t.quantity}x</span>
+                    {t.rMultiple !== undefined && t.rMultiple !== 0 && (
+                      <span className={`text-[10px] font-bold px-1 rounded ${t.rMultiple > 0 ? 'text-emerald-500 bg-emerald-500/10' : 'text-rose-500 bg-rose-500/10'}`}>
+                        {t.rMultiple > 0 ? '+' : ''}{t.rMultiple}R
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Setup, Emotion & Quick Actions Footer */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                    {t.strategy || 'General'}
+                  </span>
+                  <EmotionBadge emotion={t.emotion} />
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => onView(t)}
+                    className="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 transition-colors cursor-pointer"
+                    title="View Details"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onEdit(t)}
+                    className="p-2 rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                    title="Edit"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onDelete(t.id)}
+                    className="p-2 rounded-lg text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 transition-colors cursor-pointer"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-[10px] text-slate-400 font-mono">
+                {dateFormatted}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Pagination Footer */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-xs">
-          <span className="text-slate-500">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-xs">
+          <span className="text-slate-500 text-center sm:text-left">
             Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, sortedTrades.length)} of {sortedTrades.length} trades
           </span>
 

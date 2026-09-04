@@ -126,7 +126,7 @@ export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps
       <div className="grid grid-cols-7 gap-1.5">
         {/* Leading blank slots for previous month overflow */}
         {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-          <div key={`blank-${i}`} className="h-16 rounded-xl bg-transparent" />
+          <div key={`blank-${i}`} className="h-12 sm:h-14 md:h-16 rounded-xl bg-transparent" />
         ))}
 
         {/* Days of Month */}
@@ -161,27 +161,28 @@ export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps
           return (
             <div
               key={dateStr}
+              onClick={() => dayData ? setHoveredDay(prev => prev?.date === dateStr ? null : { date: dateStr, ...dayData }) : setHoveredDay(null)}
               onMouseEnter={() => dayData ? setHoveredDay({ date: dateStr, ...dayData }) : setHoveredDay(null)}
               onMouseLeave={() => setHoveredDay(null)}
-              className={`h-16 p-1.5 rounded-xl flex flex-col justify-between transition-all duration-150 cursor-pointer ${cellBg} ${borderStyle}`}
+              className={`h-12 sm:h-14 md:h-16 p-1 sm:p-1.5 rounded-xl flex flex-col justify-between transition-all duration-150 cursor-pointer ${cellBg} ${borderStyle}`}
             >
-              <div className="flex items-center justify-between text-[10px]">
+              <div className="flex items-center justify-between text-[9px] sm:text-[10px]">
                 <span className={`font-semibold ${isToday ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500'}`}>
                   {dayNum}
                 </span>
                 {dayData && (
-                  <span className="text-[9px] px-1 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
+                  <span className="text-[8px] sm:text-[9px] px-0.5 sm:px-1 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
                     {dayData.count}t
                   </span>
                 )}
               </div>
 
               {dayData ? (
-                <div className={`text-[11px] font-bold font-mono truncate text-right ${pnlTextColor}`}>
+                <div className={`text-[9px] sm:text-[10px] md:text-[11px] font-bold font-mono truncate text-right ${pnlTextColor}`}>
                   {dayData.pnl >= 0 ? '+' : ''}{currency}{dayData.pnl.toFixed(0)}
                 </div>
               ) : (
-                <div className="text-[10px] text-slate-300 dark:text-slate-700 text-right">—</div>
+                <div className="text-[9px] text-slate-300 dark:text-slate-700 text-right">—</div>
               )}
             </div>
           );

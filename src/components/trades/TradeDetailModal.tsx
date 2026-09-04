@@ -18,7 +18,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, currency = '$' }: Tra
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -34,12 +34,12 @@ export function TradeDetailModal({ trade, onClose, onEdit, currency = '$' }: Tra
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.94, opacity: 0, y: 15 }}
           transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-          className="relative w-full max-w-xl bg-white dark:bg-[#101422] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-10 my-8"
+          className="relative w-full max-w-xl bg-white dark:bg-[#101422] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-10 my-4 sm:my-8"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50">
-            <div className="flex items-center gap-2.5">
-              <span className="text-xl font-black text-slate-900 dark:text-white">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
+              <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 {trade.symbol}
               </span>
               <AssetBadge assetClass={trade.assetClass} />
@@ -53,21 +53,21 @@ export function TradeDetailModal({ trade, onClose, onEdit, currency = '$' }: Tra
                   onClose();
                   onEdit(trade);
                 }}
-                className="p-1.5 rounded-xl text-slate-500 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-xl text-slate-500 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Edit"
               >
                 <Edit3 className="w-4 h-4" />
               </button>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             
             {/* Big Financial Highlight */}
             {trade.status === 'Closed' && trade.netPnl !== undefined && (

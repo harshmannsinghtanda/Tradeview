@@ -1,4 +1,4 @@
-import { Trade, AssetClass, TradeDirection, TradeStatus, TradeEmotion } from '../types/trade';
+import { Trade, AssetClass, TradeDirection, TradeStatus } from '../types/trade';
 import { calculateTradeFinancials } from './calculations';
 
 export interface ParseCsvResult {
@@ -27,17 +27,61 @@ function stripBom(text: string): string {
 }
 
 /**
+ * Normalizes broker CSV text:
+ * 1. Replaces newlines inside quotes with spaces so cells like "3,563.00\n" do not break rows
+ * 2. Stitches wrapped continuation lines that start with commas (common in Dhan, Excel, Zerodha exports)
+ */
+function normalizeCsvText(csvText: string): string {
+  const clean = stripBom(csvText);
+
+  // Step 1: Replace newlines inside quotes
+  let insideQuotes = false;
+  const cleanChars: string[] = [];
+
+  for (let i = 0; i < clean.length; i++) {
+    const ch = clean[i];
+    if (ch === '"') {
+      insideQuotes = !insideQuotes;
+      cleanChars.push(ch);
+    } else if ((ch === '\n' || ch === '\r') && insideQuotes) {
+      cleanChars.push(' ');
+    } else {
+      cleanChars.push(ch);
+    }
+  }
+
+  const sanitized = cleanChars.join('');
+
+  // Step 2: Merge continuation lines that start with comma
+  const rawLines = sanitized.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const mergedLines: string[] = [];
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i].trim();
+    if (!line) continue;
+
+    // If line starts with a comma and there is a previous line, stitch it
+    if (line.startsWith(',') && mergedLines.length > 0) {
+      mergedLines[mergedLines.length - 1] += line;
+    } else {
+      mergedLines.push(line);
+    }
+  }
+
+  return mergedLines.join('\n');
+}
+
+/**
  * Detects the most likely delimiter (comma, semicolon, tab, pipe)
  */
 function detectDelimiter(text: string): string {
-  const sampleLines = text.split(/\r?\n/).slice(0, 10).filter(l => l.trim().length > 0);
+  const sampleLines = text.split(/\r?\n/).slice(0, 15).filter(l => l.trim().length > 0);
   if (sampleLines.length === 0) return ',';
 
   const counts: Record<string, number> = { ',': 0, ';': 0, '\t': 0, '|': 0 };
 
   for (const line of sampleLines) {
     for (const d of Object.keys(counts)) {
-      // Count delimiters outside quotes
       let inQuotes = false;
       for (let i = 0; i < line.length; i++) {
         if (line[i] === '"') inQuotes = !inQuotes;
@@ -59,12 +103,12 @@ function detectDelimiter(text: string): string {
 }
 
 /**
- * Universal CSV Line Splitter supporting arbitrary delimiters, quotes, escaped quotes
+ * Universal CSV Line Splitter supporting quotes and escaped quotes
  */
 function parseCsvLines(csvText: string, delimiter: string = ','): string[][] {
-  const cleanText = stripBom(csvText);
+  const normalized = normalizeCsvText(csvText);
   const lines: string[][] = [];
-  const rawLines = cleanText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const rawLines = normalized.split('\n');
 
   for (const line of rawLines) {
     if (!line.trim()) continue;
@@ -111,7 +155,7 @@ export function parseCleanNumber(val: any, fallback: number = 0): number {
     s = '-' + s.replace(/^\(|\)$/g, '');
   }
 
-  // Remove currency symbols, commas, spaces, quotes
+  // Remove currency symbols, commas, quotes
   s = s.replace(/[$€£₹¥]|USDT|USD|EUR|GBP|INR/gi, '');
   s = s.replace(/,/g, '');
   s = s.trim();
@@ -122,27 +166,21 @@ export function parseCleanNumber(val: any, fallback: number = 0): number {
 
 /**
  * Resilient multi-format Date parser
- * Supports:
- * - ISO string: 2024-08-15T14:30:00Z
- * - YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD (with optional time)
- * - DD/MM/YYYY / DD-MM-YYYY / DD.MM.YYYY (Zerodha, UK, India, Europe)
- * - MM/DD/YYYY / MM-DD-YYYY (US)
- * - Timestamps in seconds (10 digits) or ms (13 digits)
- * NEVER throws RangeError: Invalid time value
  */
-export function parseRobustDate(raw: any): string {
-  if (!raw) return new Date().toISOString();
+export function parseRobustDate(raw: any, fallbackDate?: string): string {
+  const defaultFallback = fallbackDate || new Date().toISOString();
+  if (!raw) return defaultFallback;
 
   if (typeof raw === 'number' && !isNaN(raw)) {
     const ms = raw < 1e11 ? raw * 1000 : raw;
     const d = new Date(ms);
-    return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+    return isNaN(d.getTime()) ? defaultFallback : d.toISOString();
   }
 
   const s = String(raw).trim();
-  if (!s) return new Date().toISOString();
+  if (!s) return defaultFallback;
 
-  // Numeric timestamp as string (e.g. "1723714200000" or "1723714200")
+  // Numeric timestamp as string
   if (/^\d{10,13}$/.test(s)) {
     const num = parseInt(s, 10);
     const ms = s.length === 10 ? num * 1000 : num;
@@ -150,20 +188,17 @@ export function parseRobustDate(raw: any): string {
     if (!isNaN(d.getTime())) return d.toISOString();
   }
 
-  // Replace dots with hyphens or slashes for MetaTrader: "2024.08.15 14:30:00" -> "2024-08-15 14:30:00"
+  // Replace dots with hyphens for MetaTrader: "2024.08.15 14:30:00" -> "2024-08-15 14:30:00"
   const normalized = s.replace(/^(\d{4})\.(\d{1,2})\.(\d{1,2})/, '$1-$2-$3');
 
-  // Try standard parsing first
   try {
     const directDate = new Date(normalized);
     if (!isNaN(directDate.getTime())) {
       return directDate.toISOString();
     }
-  } catch {
-    // Ignore and proceed to regex matchers
-  }
+  } catch {}
 
-  // Check for DD/MM/YYYY or DD-MM-YYYY (e.g. 15/08/2024 or 15-08-2024)
+  // Check for DD/MM/YYYY or DD-MM-YYYY
   const dmyMatch = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
   if (dmyMatch) {
     const day = parseInt(dmyMatch[1], 10);
@@ -173,8 +208,6 @@ export function parseRobustDate(raw: any): string {
     const minute = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
     const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
 
-    // If day > 12, it is definitely DD/MM/YYYY
-    // If month > 12, it was MM/DD/YYYY
     let actualDay = day;
     let actualMonth = month;
     if (day <= 12 && month > 11) {
@@ -204,35 +237,36 @@ export function parseRobustDate(raw: any): string {
     }
   }
 
-  // Final fallback: return current date rather than crashing
-  return new Date().toISOString();
+  return defaultFallback;
 }
 
 /**
- * Finds the actual table header row in CSV by checking rows 0..15 for trading keywords
+ * Finds the actual table header row in CSV by checking rows 0..30 for trading keywords
  */
 function findHeaderRowIndex(rows: string[][]): number {
   const tradingKeywords = [
-    'symbol', 'ticker', 'instrument', 'tradingsymbol', 'item', 'market', 'pair', 'asset',
+    'securityname', 'security', 'tradingsymbol', 'symbol', 'ticker', 'instrument', 'item', 'market', 'pair',
+    'realisedpl', 'realizedpl', 'realisedpnl', 'realizedpnl', 'pnl', 'profit',
+    'buyqty', 'sellqty', 'avgbuyprice', 'avgsellprice',
     'date', 'time', 'datetime', 'tradedate', 'opentime',
     'price', 'entry', 'entryprice', 'buyprice', 'avgprice', 'buyaverage',
     'exit', 'exitprice', 'sellprice', 'sellaverage', 'closeprice',
-    'qty', 'quantity', 'shares', 'contracts', 'size', 'lots',
-    'pnl', 'pl', 'profit', 'netpnl', 'realizedpl', 'realizedpnl',
+    'qty', 'quantity', 'shares', 'contracts', 'size',
     'side', 'direction', 'type', 'action', 'tradetype'
   ];
 
   let bestRowIdx = 0;
   let maxScore = -1;
 
-  for (let i = 0; i < Math.min(rows.length, 15); i++) {
+  for (let i = 0; i < Math.min(rows.length, 30); i++) {
     const row = rows[i];
     if (row.length < 2) continue;
 
     let score = 0;
     for (const cell of row) {
       const clean = cell.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (tradingKeywords.some(kw => clean.includes(kw) || kw.includes(clean))) {
+      if (!clean) continue;
+      if (tradingKeywords.some(kw => clean === kw || clean.includes(kw) || kw.includes(clean))) {
         score++;
       }
     }
@@ -247,27 +281,59 @@ function findHeaderRowIndex(rows: string[][]): number {
 }
 
 /**
- * Detects the broker format based on headers and column names
+ * Detects the broker format based on text and headers
  */
-function detectBrokerFormat(headerMap: Record<string, number>): string {
-  const keys = Object.keys(headerMap);
+function detectBrokerFormat(headerMap: Record<string, number>, rawText: string): string {
+  const textLower = rawText.toLowerCase();
 
-  if (keys.includes('tradingsymbol') || keys.includes('buyaverage') || keys.includes('realizedpl') || (keys.includes('tradetype') && keys.includes('isin'))) {
+  if (textLower.includes('dhan.co') || textLower.includes('moneylicious') || textLower.includes('raise securities')) {
+    return 'Dhan (Raise Securities)';
+  }
+  if (textLower.includes('zerodha') || (headerMap['tradingsymbol'] !== undefined && headerMap['isin'] !== undefined)) {
     return 'Zerodha (Kite)';
   }
-  if (keys.includes('dateutc') && (keys.includes('fee') || keys.includes('feecoin') || keys.includes('market'))) {
+  if (headerMap['dateutc'] !== undefined && (headerMap['fee'] !== undefined || headerMap['feecoin'] !== undefined || headerMap['market'] !== undefined)) {
     return 'Binance';
   }
-  if ((keys.includes('item') || keys.includes('ticket')) && (keys.includes('opentime') || keys.includes('closetime') || keys.includes('sl'))) {
+  if ((headerMap['item'] !== undefined || headerMap['ticket'] !== undefined) && (headerMap['opentime'] !== undefined || headerMap['closetime'] !== undefined)) {
     return 'MetaTrader 4 / 5';
   }
-  if (keys.includes('tprice') || keys.includes('cprice') || keys.includes('datadis不思議') || keys.includes('realizedpl') && keys.includes('basis')) {
+  if (headerMap['tprice'] !== undefined || headerMap['cprice'] !== undefined || (headerMap['realizedpl'] !== undefined && headerMap['basis'] !== undefined)) {
     return 'Interactive Brokers (IBKR)';
   }
-  if (keys.includes('rmultiple') || (keys.includes('strategy') && keys.includes('emotion'))) {
+  if (headerMap['rmultiple'] !== undefined || (headerMap['strategy'] !== undefined && headerMap['emotion'] !== undefined)) {
     return 'TradeView Journal Format';
   }
   return 'Standard / Broker CSV';
+}
+
+/**
+ * Extracts default report date from header metadata if available
+ */
+function extractReportDate(csvText: string): string {
+  // Check for "Profit and Loss Report from 05/09/2024 to 05/09/2026"
+  const rangeMatch = csvText.match(/from\s+(\d{1,2}[/-]\d{1,2}[/-]\d{4})/i);
+  if (rangeMatch) {
+    const parts = rangeMatch[1].split(/[/-]/);
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const year = parseInt(parts[2], 10);
+    const d = new Date(Date.UTC(year, month, day, 10, 0, 0));
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+
+  // Check for "Generated on 05/09/2026"
+  const genMatch = csvText.match(/generated\s+on\s+(\d{1,2}[/-]\d{1,2}[/-]\d{4})/i);
+  if (genMatch) {
+    const parts = genMatch[1].split(/[/-]/);
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const year = parseInt(parts[2], 10);
+    const d = new Date(Date.UTC(year, month, day, 10, 0, 0));
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+
+  return new Date().toISOString();
 }
 
 /**
@@ -288,7 +354,6 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
   const headerRowIdx = findHeaderRowIndex(parsedRows);
   const rawHeaders = parsedRows[headerRowIdx].map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
 
-  // Header map supporting multi-column duplicates like MetaTrader's two 'Price' columns
   const headerMap: Record<string, number> = {};
   const duplicateHeaderIndices: Record<string, number[]> = {};
 
@@ -301,7 +366,8 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
     }
   });
 
-  const brokerDetected = detectBrokerFormat(headerMap);
+  const brokerDetected = detectBrokerFormat(headerMap, csvContent);
+  const reportDefaultDate = extractReportDate(csvContent);
 
   const getCol = (row: string[], ...aliases: string[]): string | undefined => {
     for (const a of aliases) {
@@ -314,16 +380,18 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
     return undefined;
   };
 
-  // Check if we need to pair separate Buy & Sell order executions (e.g. Zerodha Tradebook)
+  // Check if this is a raw order execution log needing FIFO pairing
   const isExecutionLog = (headerMap['tradetype'] !== undefined || headerMap['type'] !== undefined) &&
     headerMap['exitprice'] === undefined &&
     headerMap['sellaverage'] === undefined &&
+    headerMap['avgsellprice'] === undefined &&
     headerMap['realizedpl'] === undefined &&
+    headerMap['realisedpl'] === undefined &&
     headerMap['profit'] === undefined &&
     headerMap['pnl'] === undefined;
 
   if (isExecutionLog) {
-    const pairedResult = pairExecutionLogTrades(parsedRows.slice(headerRowIdx + 1), getCol, brokerDetected);
+    const pairedResult = pairExecutionLogTrades(parsedRows.slice(headerRowIdx + 1), getCol, brokerDetected, reportDefaultDate);
     if (pairedResult.trades.length > 0) {
       return pairedResult;
     }
@@ -336,14 +404,44 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
     const row = parsedRows[i];
     if (row.length === 0 || row.every(cell => !cell)) continue;
 
+    // Check if row is a section divider or footer line like "F&O Segment" or "Notes:"
+    const firstCell = (row[0] || '').toLowerCase().trim();
+    if (
+      firstCell.includes('segment') ||
+      firstCell.includes('notes') ||
+      firstCell.includes('total') ||
+      firstCell.includes('report') ||
+      firstCell.includes('disclaimer') ||
+      firstCell.includes('securities')
+    ) {
+      continue;
+    }
+
     try {
-      // Symbol
-      const symbol = (
-        getCol(row, 'symbol', 'ticker', 'tradingsymbol', 'instrument', 'item', 'market', 'pair', 'asset', 'security', 'description') || 'UNKNOWN'
+      // Symbol / Instrument Name
+      let symbol = (
+        getCol(
+          row,
+          'securityname', 'security', 'tradingsymbol', 'symbol', 'ticker',
+          'instrument', 'item', 'market', 'pair', 'asset', 'description', 'name'
+        ) || ''
       ).replace(/['"]/g, '').trim().toUpperCase();
 
-      if (symbol === 'UNKNOWN' && row.length <= 2) {
-        continue; // skip trailing footer lines or blank rows
+      // If symbol is empty, check row[1] if row[0] was a row number (e.g. "1, Larsen & Toubro")
+      if (!symbol && /^\d+$/.test(row[0]) && row[1] && row[1].length > 1) {
+        symbol = row[1].trim().toUpperCase();
+      }
+
+      if (
+        !symbol ||
+        symbol === 'UNKNOWN' ||
+        symbol === 'SECURITY NAME' ||
+        symbol === 'SECURITY' ||
+        symbol === 'SYMBOL' ||
+        symbol === 'TOTAL' ||
+        symbol === 'SR'
+      ) {
+        continue;
       }
 
       // Direction
@@ -352,7 +450,7 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
       ).toUpperCase();
       const direction: TradeDirection = dirRaw.includes('SHORT') || dirRaw.includes('SELL') ? 'Short' : 'Long';
 
-      // Special handling for MetaTrader's two 'Price' columns (Open Price = 1st, Close Price = 2nd)
+      // MetaTrader dual 'Price' columns
       let mt4EntryPrice: number | undefined;
       let mt4ExitPrice: number | undefined;
       if (duplicateHeaderIndices['price'] && duplicateHeaderIndices['price'].length >= 2) {
@@ -364,7 +462,11 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
       const entryPriceVal = mt4EntryPrice !== undefined && mt4EntryPrice > 0
         ? mt4EntryPrice
         : parseCleanNumber(
-            getCol(row, 'entryprice', 'entry', 'price', 'buyprice', 'avgprice', 'buyavg', 'buyaverage', 'openprice', 'tprice', 'costprice', 'fillprice', 'rate'),
+            getCol(
+              row,
+              'avgbuyprice', 'buyavg', 'buyaverage', 'buyprice', 'openavgprice',
+              'entryprice', 'entry', 'price', 'openprice', 'tprice', 'costprice', 'fillprice', 'rate'
+            ),
             0
           );
 
@@ -374,56 +476,64 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
         : undefined;
 
       if (exitPriceVal === undefined) {
-        const exitCol = getCol(row, 'exitprice', 'exit', 'sellprice', 'closeprice', 'sellavg', 'sellaverage', 'cprice', 'settlementprice');
-        if (exitCol !== undefined) {
+        const exitCol = getCol(
+          row,
+          'avgsellprice', 'sellavg', 'sellaverage', 'sellprice', 'closingrate',
+          'exitprice', 'exit', 'closeprice', 'cprice', 'settlementprice'
+        );
+        if (exitCol !== undefined && exitCol !== '0.00' && exitCol !== '0') {
           exitPriceVal = parseCleanNumber(exitCol);
         }
       }
 
-      // Quantity
-      const quantity = Math.abs(
-        parseCleanNumber(getCol(row, 'quantity', 'qty', 'shares', 'contracts', 'lots', 'size', 'volume', 'amount', 'filledqty'), 1)
-      ) || 1;
+      // Quantity: Sell Qty takes precedence for closed trades, otherwise Buy Qty or Open Qty
+      const sellQtyVal = parseCleanNumber(getCol(row, 'sellqty', 'soldqty'), 0);
+      const buyQtyVal = parseCleanNumber(getCol(row, 'buyqty', 'quantity', 'qty', 'shares', 'contracts', 'lots', 'size', 'volume', 'amount', 'openqty', 'filledqty'), 0);
+      const quantity = Math.abs(sellQtyVal > 0 ? sellQtyVal : (buyQtyVal > 0 ? buyQtyVal : 1));
 
       // Realized P&L / Profit
       const pnlVal = getCol(
         row,
-        'pnl', 'netpnl', 'pl', 'profit', 'realizedpl', 'realizedpnl', 'gainloss', 'netprofit', 'grossprofit', 'proceeds'
+        'realisedpl', 'realisedpnl', 'realizedpl', 'realizedpnl',
+        'pnl', 'netpnl', 'pl', 'profit', 'netprofit', 'grossprofit', 'proceeds'
       );
-      const directPnl = pnlVal !== undefined ? parseCleanNumber(pnlVal) : undefined;
+      const unrealisedVal = getCol(row, 'unrealisedpl', 'unrealisedpnl', 'unrealizedpl', 'unrealizedpnl');
 
-      // Stop Loss & Take Profit
-      const stopLossVal = getCol(row, 'stoploss', 'sl', 'stop');
-      const stopLoss = stopLossVal ? parseCleanNumber(stopLossVal) : undefined;
-
-      const takeProfitVal = getCol(row, 'takeprofit', 'tp', 'target');
-      const takeProfit = takeProfitVal ? parseCleanNumber(takeProfitVal) : undefined;
+      let directPnl: number | undefined = pnlVal !== undefined ? parseCleanNumber(pnlVal) : undefined;
+      let unrealizedPnl: number | undefined = unrealisedVal !== undefined ? parseCleanNumber(unrealisedVal) : undefined;
 
       // Fees & Commissions
       const fees = Math.abs(
-        parseCleanNumber(getCol(row, 'fees', 'fee', 'commission', 'charges', 'commfee', 'tax', 'brokerage', 'taxes', 'swap'), 0)
+        parseCleanNumber(getCol(row, 'totalcharges', 'charges', 'fees', 'fee', 'commission', 'commfee', 'tax', 'brokerage', 'taxes', 'swap'), 0)
       );
 
       // Dates
-      const entryDateRaw = getCol(row, 'entrydate', 'date', 'datetime', 'time', 'opened', 'opentime', 'tradedate', 'orderdate', 'executiontime', 'buydate', 'dateutc');
-      const entryDate = parseRobustDate(entryDateRaw);
+      const entryDateRaw = getCol(
+        row,
+        'buydate', 'tradedate', 'entrydate', 'date', 'datetime', 'time',
+        'opened', 'opentime', 'orderdate', 'executiontime', 'dateutc'
+      );
+      const entryDate = parseRobustDate(entryDateRaw, reportDefaultDate);
 
-      const exitDateRaw = getCol(row, 'exitdate', 'closedate', 'closed', 'closetime', 'selldate');
-      const exitDate = exitDateRaw ? parseRobustDate(exitDateRaw) : undefined;
+      const exitDateRaw = getCol(row, 'selldate', 'exitdate', 'closedate', 'closed', 'closetime');
+      const exitDate = exitDateRaw ? parseRobustDate(exitDateRaw, reportDefaultDate) : undefined;
 
-      // Status determination
-      const statusRaw = (getCol(row, 'status', 'state', 'result') || '').toLowerCase();
+      // Status determination:
+      // In Dhan, Zerodha, and broker reports:
+      // A trade is CLOSED if Sell Qty > 0 or Realised P&L != 0 or exitPrice was a real executed sell price
       let status: TradeStatus = 'Open';
       if (
-        directPnl !== undefined ||
-        exitPriceVal !== undefined ||
-        exitDate !== undefined ||
-        statusRaw.includes('close') ||
-        statusRaw.includes('win') ||
-        statusRaw.includes('loss') ||
-        statusRaw.includes('complete')
+        (sellQtyVal > 0 && directPnl !== undefined) ||
+        (directPnl !== undefined && directPnl !== 0) ||
+        (exitPriceVal !== undefined && exitDate !== undefined) ||
+        (exitPriceVal !== undefined && getCol(row, 'avgsellprice', 'sellavg', 'sellaverage', 'sellprice') !== undefined)
       ) {
         status = 'Closed';
+      }
+
+      // If trade is Open (holding), use unrealized P&L if available
+      if (status === 'Open' && directPnl === 0 && unrealizedPnl !== undefined && unrealizedPnl !== 0) {
+        directPnl = unrealizedPnl;
       }
 
       // Asset Class detection
@@ -431,7 +541,7 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
       let assetClass: AssetClass = 'Stocks';
       if (rawAsset.includes('CRYPTO') || rawAsset.includes('COIN')) assetClass = 'Crypto';
       else if (rawAsset.includes('FOREX') || rawAsset.includes('FX') || rawAsset.includes('CURRENCY')) assetClass = 'Forex';
-      else if (rawAsset.includes('FUT') || rawAsset.includes('FO')) assetClass = 'Futures';
+      else if (rawAsset.includes('FUT') || rawAsset.includes('FO') || rawAsset.includes('DERIVATIVE')) assetClass = 'Futures';
       else if (rawAsset.includes('OPT')) assetClass = 'Options';
       else if (rawAsset.includes('STOCK') || rawAsset.includes('EQUITY') || rawAsset.includes('EQ')) assetClass = 'Stocks';
       else {
@@ -442,11 +552,6 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
         else assetClass = 'Stocks';
       }
 
-      // Strategy, Emotion, Notes
-      const strategy = getCol(row, 'strategy', 'setup', 'tag', 'model', 'system') || 'General Setup';
-      const emotionRaw = (getCol(row, 'emotion', 'psychology', 'mindset', 'mood') || 'Disciplined') as TradeEmotion;
-      const notes = getCol(row, 'notes', 'comment', 'comments', 'reflection', 'remarks') || '';
-
       // Financial calculations
       let effectiveExitPrice = exitPriceVal;
       let calculatedGrossPnl = 0;
@@ -455,7 +560,6 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
       let rMultiple = 0;
 
       if (directPnl !== undefined) {
-        // Direct PnL from broker statement
         calculatedNetPnl = directPnl;
         calculatedGrossPnl = directPnl + fees;
         if (effectiveExitPrice === undefined && entryPriceVal > 0 && quantity > 0) {
@@ -465,23 +569,13 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
         }
         const totalCost = (entryPriceVal || 1) * quantity;
         pnlPercentage = totalCost > 0 ? (calculatedNetPnl / totalCost) * 100 : 0;
-
-        if (stopLoss && stopLoss !== entryPriceVal) {
-          const riskPerUnit = direction === 'Long' ? entryPriceVal - stopLoss : stopLoss - entryPriceVal;
-          if (riskPerUnit > 0) {
-            const totalRisk = riskPerUnit * quantity;
-            if (totalRisk > 0) rMultiple = Number((calculatedNetPnl / totalRisk).toFixed(2));
-          }
-        }
       } else {
-        // Compute from entry, exit, quantity, fees
         const fin = calculateTradeFinancials({
           entryPrice: entryPriceVal,
           exitPrice: effectiveExitPrice,
           quantity,
           fees,
           direction,
-          stopLoss,
         });
         calculatedGrossPnl = fin.grossPnl;
         calculatedNetPnl = status === 'Closed' ? fin.netPnl : 0;
@@ -491,7 +585,7 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
 
       const trade: Trade = {
         id: 'trade_' + Math.random().toString(36).substring(2, 9),
-        symbol: symbol || 'STOCK',
+        symbol,
         assetClass,
         direction,
         status,
@@ -500,16 +594,14 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
         entryPrice: entryPriceVal || (effectiveExitPrice !== undefined ? effectiveExitPrice : 1),
         exitPrice: effectiveExitPrice,
         quantity,
-        stopLoss,
-        takeProfit,
         fees,
         grossPnl: Number(calculatedGrossPnl.toFixed(2)),
         netPnl: Number(calculatedNetPnl.toFixed(2)),
         pnlPercentage: Number(pnlPercentage.toFixed(2)),
         rMultiple,
-        strategy,
-        emotion: emotionRaw || 'Disciplined',
-        notes,
+        strategy: brokerDetected !== 'Standard / Broker CSV' ? `${brokerDetected} Import` : 'General Setup',
+        emotion: 'Disciplined',
+        notes: `Imported from ${brokerDetected}`,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
@@ -547,12 +639,12 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
 
 /**
  * Handles raw execution logs (e.g. Zerodha Tradebook or Binance order logs)
- * FIFO matches BUY and SELL executions for each symbol to produce completed round-trip trades
  */
 function pairExecutionLogTrades(
   dataRows: string[][],
   getCol: (row: string[], ...aliases: string[]) => string | undefined,
-  brokerDetected: string
+  brokerDetected: string,
+  reportDefaultDate: string
 ): ParseCsvResult {
   interface Execution {
     symbol: string;
@@ -580,7 +672,7 @@ function pairExecutionLogTrades(
     const price = parseCleanNumber(getCol(row, 'price', 'entryprice', 'avgprice', 'rate', 'fillprice'), 0);
     const qty = Math.abs(parseCleanNumber(getCol(row, 'quantity', 'qty', 'shares', 'contracts', 'size', 'lots'), 0));
     const fees = Math.abs(parseCleanNumber(getCol(row, 'fees', 'fee', 'commission', 'charges', 'brokerage'), 0));
-    const date = parseRobustDate(getCol(row, 'tradedate', 'date', 'datetime', 'time', 'orderdate', 'executiontime'));
+    const date = parseRobustDate(getCol(row, 'tradedate', 'date', 'datetime', 'time', 'orderdate', 'executiontime'), reportDefaultDate);
 
     if (price <= 0 || qty <= 0) continue;
 
@@ -601,7 +693,6 @@ function pairExecutionLogTrades(
   const pairedTrades: Trade[] = [];
 
   for (const [symbol, execs] of Object.entries(executionsBySymbol)) {
-    // Sort chronologically
     execs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const buyQueue: Execution[] = [];
@@ -614,7 +705,6 @@ function pairExecutionLogTrades(
           const shortExec = sellQueue[0];
           const matchedQty = Math.min(remainingQty, shortExec.qty);
 
-          // Short closed by Buy
           const grossPnl = (shortExec.price - exec.price) * matchedQty;
           const matchedFees = exec.fees + shortExec.fees;
           const netPnl = grossPnl - matchedFees;
@@ -649,13 +739,11 @@ function pairExecutionLogTrades(
           buyQueue.push({ ...exec, qty: remainingQty });
         }
       } else {
-        // SELL execution
         let remainingQty = exec.qty;
         while (buyQueue.length > 0 && remainingQty > 0) {
           const longExec = buyQueue[0];
           const matchedQty = Math.min(remainingQty, longExec.qty);
 
-          // Long closed by Sell
           const grossPnl = (exec.price - longExec.price) * matchedQty;
           const matchedFees = exec.fees + longExec.fees;
           const netPnl = grossPnl - matchedFees;
@@ -692,7 +780,6 @@ function pairExecutionLogTrades(
       }
     }
 
-    // Remaining open positions
     for (const openLong of buyQueue) {
       pairedTrades.push({
         id: 'trade_' + Math.random().toString(36).substring(2, 9),

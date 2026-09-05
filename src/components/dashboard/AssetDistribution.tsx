@@ -2,13 +2,14 @@ import { useMemo } from 'react';
 import { Trade } from '../../types/trade';
 import { analyzeByAssetClass } from '../../lib/calculations';
 import { PieChart, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface AssetDistributionProps {
   trades: Trade[];
-  currency?: string;
 }
 
-export function AssetDistribution({ trades, currency = '$' }: AssetDistributionProps) {
+export function AssetDistribution({ trades }: AssetDistributionProps) {
+  const { formatCurrency } = useCurrency();
   const assetData = useMemo(() => {
     return analyzeByAssetClass(trades);
   }, [trades]);
@@ -59,13 +60,13 @@ export function AssetDistribution({ trades, currency = '$' }: AssetDistributionP
             <ArrowUpRight className="w-3.5 h-3.5" />
             <span>Longs ({directionData.longPercent}%)</span>
             <span className="font-mono text-[11px] text-slate-500">
-              {directionData.longPnl >= 0 ? '+' : ''}{currency}{directionData.longPnl.toFixed(0)}
+              {directionData.longPnl >= 0 ? '+' : ''}{formatCurrency(directionData.longPnl).split('.')[0]}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 text-rose-500">
             <span className="font-mono text-[11px] text-slate-500">
-              {directionData.shortPnl >= 0 ? '+' : ''}{currency}{directionData.shortPnl.toFixed(0)}
+              {directionData.shortPnl >= 0 ? '+' : ''}{formatCurrency(directionData.shortPnl).split('.')[0]}
             </span>
             <span>Shorts ({directionData.shortPercent}%)</span>
             <ArrowDownRight className="w-3.5 h-3.5" />
@@ -109,7 +110,7 @@ export function AssetDistribution({ trades, currency = '$' }: AssetDistributionP
                       {item.count} trades ({item.percentage}%)
                     </span>
                     <span className={`font-mono font-bold ${isPos ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {isPos ? '+' : ''}{currency}{item.totalPnl.toFixed(2)}
+                      {isPos ? '+' : ''}{formatCurrency(item.totalPnl)}
                     </span>
                   </div>
                 </div>

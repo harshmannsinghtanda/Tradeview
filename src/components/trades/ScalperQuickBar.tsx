@@ -5,13 +5,14 @@ import confetti from 'canvas-confetti';
 import { Trade, AssetClass, TradeDirection, TradeEmotion } from '../../types/trade';
 import { calculateTradeFinancials } from '../../lib/calculations';
 import { Button } from '../common/Button';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface ScalperQuickBarProps {
   onSaveTrade: (trade: Trade) => void;
-  currency?: string;
 }
 
-export function ScalperQuickBar({ onSaveTrade, currency = '$' }: ScalperQuickBarProps) {
+export function ScalperQuickBar({ onSaveTrade }: ScalperQuickBarProps) {
+  const { formatCurrency } = useCurrency();
   const [symbol, setSymbol] = useState('');
   const [assetClass, setAssetClass] = useState<AssetClass>('Futures');
   const [direction, setDirection] = useState<TradeDirection>('Long');
@@ -270,7 +271,7 @@ export function ScalperQuickBar({ onSaveTrade, currency = '$' }: ScalperQuickBar
             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">
               {livePnl ? (
                 <span className={livePnl.netPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}>
-                  {livePnl.netPnl >= 0 ? '+' : ''}{currency}{livePnl.netPnl.toFixed(1)}
+                  {livePnl.netPnl >= 0 ? '+' : ''}{formatCurrency(livePnl.netPnl)}
                 </span>
               ) : 'Action'}
             </span>

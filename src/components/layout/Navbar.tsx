@@ -9,9 +9,12 @@ import {
   ListOrdered, 
   BrainCircuit,
   Sparkles,
-  Zap
+  Zap,
+  IndianRupee,
+  DollarSign
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { Button } from '../common/Button';
 
 export type NavTab = 'dashboard' | 'trades' | 'analytics';
@@ -38,12 +41,25 @@ export function Navbar({
   onToggleScalperMode,
 }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
+  const { currency, setCurrency, usdToInrRate, setUsdToInrRate } = useCurrency();
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart2 },
     { id: 'trades', label: 'Trade Log', icon: ListOrdered },
     { id: 'analytics', label: 'Psychology & Setups', icon: BrainCircuit },
   ];
+
+  const handleCurrencyClick = () => {
+    setCurrency(currency === 'INR' ? 'USD' : 'INR');
+  };
+
+  const handleCurrencyContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const newRate = window.prompt(`Enter USD to INR conversion rate (Current: ${usdToInrRate}):`, String(usdToInrRate));
+    if (newRate && !isNaN(Number(newRate)) && Number(newRate) > 0) {
+      setUsdToInrRate(Number(newRate));
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/80 dark:bg-[#0a0c14]/80 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
@@ -141,6 +157,22 @@ export function Navbar({
                 {isScalperMode ? '⚡ Scalp Mode' : 'Scalper Mode'}
               </span>
             </button>
+
+            {/* Currency Toggle */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleCurrencyClick}
+              onContextMenu={handleCurrencyContextMenu}
+              className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              title={`Switch Currency (Right click to set rate)`}
+              aria-label="Toggle currency"
+            >
+              {currency === 'INR' ? (
+                <IndianRupee className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              )}
+            </motion.button>
 
             {/* Light / Dark Mode Toggle Button */}
             <motion.button

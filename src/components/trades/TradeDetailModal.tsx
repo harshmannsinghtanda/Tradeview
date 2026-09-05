@@ -2,15 +2,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Target, Award, Brain, MessageSquare, Edit3 } from 'lucide-react';
 import { Trade } from '../../types/trade';
 import { DirectionBadge, StatusBadge, AssetBadge, EmotionBadge } from '../common/Badge';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface TradeDetailModalProps {
   trade: Trade | null;
   onClose: () => void;
   onEdit: (trade: Trade) => void;
-  currency?: string;
 }
 
-export function TradeDetailModal({ trade, onClose, onEdit, currency = '$' }: TradeDetailModalProps) {
+export function TradeDetailModal({ trade, onClose, onEdit }: TradeDetailModalProps) {
+  const { formatCurrency } = useCurrency();
   if (!trade) return null;
 
   const isProfit = (trade.netPnl ?? 0) > 0;
@@ -83,7 +84,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, currency = '$' }: Tra
                     Net Realized Result
                   </span>
                   <div className={`text-2xl font-black font-mono tabular-nums ${isProfit ? 'text-emerald-500' : isLoss ? 'text-rose-500' : 'text-slate-400'}`}>
-                    {isProfit ? '+' : ''}{currency}{trade.netPnl.toFixed(2)}
+                    {isProfit ? '+' : ''}{formatCurrency(trade.netPnl ?? 0)}
                     {trade.pnlPercentage !== undefined && (
                       <span className="text-sm font-semibold ml-2 opacity-80">
                         ({isProfit ? '+' : ''}{trade.pnlPercentage.toFixed(2)}%)
@@ -110,14 +111,14 @@ export function TradeDetailModal({ trade, onClose, onEdit, currency = '$' }: Tra
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60">
                 <span className="text-slate-400 text-[10px] uppercase font-bold">Entry Price</span>
                 <p className="text-sm font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200 mt-0.5">
-                  {currency}{trade.entryPrice.toLocaleString()}
+                  {formatCurrency(trade.entryPrice)}
                 </p>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60">
                 <span className="text-slate-400 text-[10px] uppercase font-bold">Exit Price</span>
                 <p className="text-sm font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200 mt-0.5">
-                  {trade.exitPrice ? `${currency}${trade.exitPrice.toLocaleString()}` : '—'}
+                  {trade.exitPrice ? `${formatCurrency(trade.exitPrice)}` : '—'}
                 </p>
               </div>
 
@@ -131,7 +132,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, currency = '$' }: Tra
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60">
                 <span className="text-slate-400 text-[10px] uppercase font-bold">Fees / Commission</span>
                 <p className="text-sm font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200 mt-0.5">
-                  {currency}{trade.fees.toFixed(2)}
+                  {formatCurrency(trade.fees)}
                 </p>
               </div>
             </div>
@@ -143,7 +144,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, currency = '$' }: Tra
                   <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/20">
                     <span className="text-rose-500 text-[10px] uppercase font-bold">Planned Stop Loss</span>
                     <p className="text-sm font-bold font-mono text-rose-600 dark:text-rose-400 mt-0.5">
-                      {currency}{trade.stopLoss}
+                      {formatCurrency(trade.stopLoss)}
                     </p>
                   </div>
                 )}
@@ -151,7 +152,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, currency = '$' }: Tra
                   <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
                     <span className="text-emerald-500 text-[10px] uppercase font-bold">Take Profit Target</span>
                     <p className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
-                      {currency}{trade.takeProfit}
+                      {formatCurrency(trade.takeProfit)}
                     </p>
                   </div>
                 )}

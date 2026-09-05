@@ -10,6 +10,7 @@ import {
 import { Trade } from '../../types/trade';
 import { DirectionBadge, StatusBadge, AssetBadge, EmotionBadge } from '../common/Badge';
 import { Button } from '../common/Button';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface TradeTableProps {
   trades: Trade[];
@@ -17,7 +18,6 @@ interface TradeTableProps {
   onDelete: (tradeId: string) => void;
   onView: (trade: Trade) => void;
   onOpenNewTrade: () => void;
-  currency?: string;
 }
 
 type SortField = 'date' | 'symbol' | 'netPnl' | 'rMultiple' | 'status';
@@ -29,8 +29,8 @@ export function TradeTable({
   onDelete,
   onView,
   onOpenNewTrade,
-  currency = '$',
 }: TradeTableProps) {
+  const { formatCurrency } = useCurrency();
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [page, setPage] = useState(1);
@@ -186,11 +186,11 @@ export function TradeTable({
                   {/* Entry / Exit */}
                   <td className="py-3 px-4 whitespace-nowrap font-mono tabular-nums">
                     <div className="text-slate-800 dark:text-slate-200 font-semibold">
-                      {currency}{t.entryPrice.toLocaleString()}
+                      {formatCurrency(t.entryPrice)}
                     </div>
                     {t.exitPrice ? (
                       <div className="text-[11px] text-slate-400">
-                        → {currency}{t.exitPrice.toLocaleString()}
+                        → {formatCurrency(t.exitPrice)}
                       </div>
                     ) : (
                       <span className="text-[10px] text-amber-500 italic">Holding</span>
@@ -202,7 +202,7 @@ export function TradeTable({
                     <div>Qty: {t.quantity}</div>
                     {t.stopLoss && (
                       <div className="text-[10px] text-rose-500/80">
-                        SL: {currency}{t.stopLoss}
+                        SL: {formatCurrency(t.stopLoss)}
                       </div>
                     )}
                   </td>
@@ -212,7 +212,7 @@ export function TradeTable({
                     {hasPnl && t.status === 'Closed' ? (
                       <div>
                         <span className={isProfit ? 'text-emerald-500' : isLoss ? 'text-rose-500' : 'text-slate-400'}>
-                          {isProfit ? '+' : ''}{currency}{t.netPnl?.toFixed(2)}
+                          {isProfit ? '+' : ''}{formatCurrency(t.netPnl ?? 0)}
                         </span>
                         {t.pnlPercentage !== undefined && (
                           <div className={`text-[10px] ${isProfit ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
@@ -313,7 +313,7 @@ export function TradeTable({
                 <div className="text-right">
                   {hasPnl && t.status === 'Closed' ? (
                     <span className={`text-sm font-bold font-mono ${isProfit ? 'text-emerald-500' : isLoss ? 'text-rose-500' : 'text-slate-400'}`}>
-                      {isProfit ? '+' : ''}{currency}{t.netPnl?.toFixed(2)}
+                      {isProfit ? '+' : ''}{formatCurrency(t.netPnl ?? 0)}
                     </span>
                   ) : (
                     <span className="text-xs text-amber-500 font-semibold">Active</span>
@@ -326,7 +326,7 @@ export function TradeTable({
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase font-bold block">Entry → Exit</span>
                   <span className="font-mono tabular-nums text-slate-700 dark:text-slate-300">
-                    {currency}{t.entryPrice} → {t.exitPrice ? `${currency}${t.exitPrice}` : 'Open'}
+                    {formatCurrency(t.entryPrice)} → {t.exitPrice ? `${formatCurrency(t.exitPrice)}` : 'Open'}
                   </span>
                 </div>
 

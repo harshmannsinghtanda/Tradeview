@@ -52,23 +52,14 @@ function normalizeCsvText(csvText: string): string {
 
   const sanitized = cleanChars.join('');
 
-  // Step 2: Merge continuation lines that start with comma
-  const rawLines = sanitized.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-  const mergedLines: string[] = [];
-
-  for (let i = 0; i < rawLines.length; i++) {
-    const line = rawLines[i].trim();
-    if (!line) continue;
-
-    // If line starts with a comma and there is a previous line, stitch it
-    if (line.startsWith(',') && mergedLines.length > 0) {
-      mergedLines[mergedLines.length - 1] += line;
-    } else {
-      mergedLines.push(line);
-    }
-  }
-
-  return mergedLines.join('\n');
+  // Step 2: Merge continuation lines that start with a comma (fixes Dhan unquoted line breaks)
+  let standardNewlines = sanitized.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  
+  // Fix Dhan's broken unquoted newlines that are immediately followed by a comma
+  standardNewlines = standardNewlines.replace(/\n,/g, ',');
+  
+  const rawLines = standardNewlines.split('\n');
+  return rawLines.map(l => l.trim()).filter(l => l).join('\n');
 }
 
 /**

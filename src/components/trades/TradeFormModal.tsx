@@ -11,13 +11,13 @@ import {
 } from '../../types/trade';
 import { calculateTradeFinancials } from '../../lib/calculations';
 import { Button } from '../common/Button';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface TradeFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (trade: Trade) => void;
   initialTrade?: Trade | null;
-  currency?: string;
 }
 
 export function TradeFormModal({
@@ -25,8 +25,8 @@ export function TradeFormModal({
   onClose,
   onSave,
   initialTrade,
-  currency = '$',
 }: TradeFormModalProps) {
+  const { formatCurrency } = useCurrency();
   // Form State
   const [symbol, setSymbol] = useState('');
   const [assetClass, setAssetClass] = useState<AssetClass>('Crypto');
@@ -405,7 +405,7 @@ export function TradeFormModal({
 
                 <div className="flex items-center gap-4 font-mono font-bold">
                   <span className={financials.netPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}>
-                    Net P&L: {financials.netPnl >= 0 ? '+' : ''}{currency}{financials.netPnl.toFixed(2)} ({financials.pnlPercentage.toFixed(2)}%)
+                    Net P&L: {financials.netPnl >= 0 ? '+' : ''}{formatCurrency(financials.netPnl)} ({financials.pnlPercentage.toFixed(2)}%)
                   </span>
 
                   {financials.rMultiple !== 0 && (

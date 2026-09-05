@@ -2,13 +2,14 @@ import { useState, useMemo } from 'react';
 import { Trade } from '../../types/trade';
 import { buildCumulativePnlSeries } from '../../lib/calculations';
 import { TrendingUp } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface PnlChartProps {
   trades: Trade[];
-  currency?: string;
 }
 
-export function PnlChart({ trades, currency = '$' }: PnlChartProps) {
+export function PnlChart({ trades }: PnlChartProps) {
+  const { formatCurrency } = useCurrency();
   const [timeframe, setTimeframe] = useState<'ALL' | '30D' | '7D'>('ALL');
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
@@ -183,7 +184,7 @@ export function PnlChart({ trades, currency = '$' }: PnlChartProps) {
             textAnchor="end"
             className="text-[10px] fill-slate-400 font-mono font-medium"
           >
-            {currency}0
+            {formatCurrency(0)}
           </text>
 
           {/* Top peak label */}
@@ -193,7 +194,7 @@ export function PnlChart({ trades, currency = '$' }: PnlChartProps) {
             textAnchor="end"
             className="text-[10px] fill-slate-400 font-mono font-medium"
           >
-            {currency}{maxVal.toFixed(0)}
+            {formatCurrency(maxVal)}
           </text>
 
           {/* Area fill */}
@@ -276,13 +277,13 @@ export function PnlChart({ trades, currency = '$' }: PnlChartProps) {
               <div className="flex justify-between gap-4">
                 <span className="text-slate-400">Trade P&L:</span>
                 <span className={`font-mono font-bold ${activePoint.data.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {activePoint.data.pnl >= 0 ? '+' : ''}{currency}{activePoint.data.pnl.toFixed(2)}
+                  {activePoint.data.pnl >= 0 ? '+' : ''}{formatCurrency(activePoint.data.pnl)}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-slate-400">Cumulative:</span>
                 <span className="font-mono font-bold text-white">
-                  {activePoint.data.cumulative >= 0 ? '+' : ''}{currency}{activePoint.data.cumulative.toFixed(2)}
+                  {activePoint.data.cumulative >= 0 ? '+' : ''}{formatCurrency(activePoint.data.cumulative)}
                 </span>
               </div>
             </div>

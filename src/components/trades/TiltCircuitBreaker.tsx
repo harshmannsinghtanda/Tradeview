@@ -1,19 +1,19 @@
 import { useState, useMemo } from 'react';
 import { ShieldAlert, AlertTriangle, ShieldCheck, Flame, Lock } from 'lucide-react';
 import { Trade } from '../../types/trade';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface TiltCircuitBreakerProps {
   trades: Trade[];
-  currency?: string;
   dailyLossLimit?: number; // e.g. $500 max loss
   onUpdateLossLimit?: (limit: number) => void;
 }
 
 export function TiltCircuitBreaker({
   trades,
-  currency = '$',
   dailyLossLimit = 500,
 }: TiltCircuitBreakerProps) {
+  const { formatCurrency } = useCurrency();
   const [isLocked, setIsLocked] = useState(false);
 
   // Compute today's trades and session stats
@@ -110,11 +110,11 @@ export function TiltCircuitBreaker({
         <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800/60 space-y-1">
           <div className="flex justify-between items-center text-[10px] uppercase font-bold text-slate-400">
             <span>Daily Loss Limit</span>
-            <span className="font-mono">{currency}{dailyLossLimit}</span>
+            <span className="font-mono">{formatCurrency(dailyLossLimit)}</span>
           </div>
           <div className="flex justify-between items-center font-mono font-bold">
             <span className={sessionStats.todayNetPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}>
-              {sessionStats.todayNetPnl >= 0 ? '+' : ''}{currency}{sessionStats.todayNetPnl.toFixed(2)}
+              {sessionStats.todayNetPnl >= 0 ? '+' : ''}{formatCurrency(sessionStats.todayNetPnl)}
             </span>
             <span className="text-[10px] text-slate-400">
               {sessionStats.lossPercentageOfLimit.toFixed(0)}% used

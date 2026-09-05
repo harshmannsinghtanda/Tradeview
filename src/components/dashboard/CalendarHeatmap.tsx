@@ -2,13 +2,14 @@ import { useState, useMemo, useEffect } from 'react';
 import { Trade } from '../../types/trade';
 import { buildCalendarHeatmapData } from '../../lib/calculations';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Compass } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface CalendarHeatmapProps {
   trades: Trade[];
-  currency?: string;
 }
 
-export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps) {
+export function CalendarHeatmap({ trades }: CalendarHeatmapProps) {
+  const { formatCurrency } = useCurrency();
   // Find latest trade date to default or navigate to
   const latestTradeDate = useMemo(() => {
     const closed = trades.filter((t) => t.status === 'Closed');
@@ -141,7 +142,7 @@ export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps
         <div className="flex items-center gap-2">
           <span className="text-slate-500">Month Net P&L:</span>
           <span className={`font-bold font-mono ${monthlyMetrics.monthPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-            {monthlyMetrics.monthPnl >= 0 ? '+' : ''}{currency}{monthlyMetrics.monthPnl.toFixed(2)}
+            {monthlyMetrics.monthPnl >= 0 ? '+' : ''}{formatCurrency(monthlyMetrics.monthPnl)}
           </span>
         </div>
         <div className="flex items-center gap-4 text-slate-500">
@@ -217,7 +218,7 @@ export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps
 
               {dayData ? (
                 <div className={`text-[9px] sm:text-[10px] md:text-[11px] font-bold font-mono truncate text-right ${pnlTextColor}`}>
-                  {dayData.pnl >= 0 ? '+' : ''}{currency}{dayData.pnl.toFixed(0)}
+                  {dayData.pnl >= 0 ? '+' : ''}{formatCurrency(dayData.pnl).split('.')[0]}
                 </div>
               ) : (
                 <div className="text-[9px] text-slate-300 dark:text-slate-700 text-right">—</div>
@@ -236,7 +237,7 @@ export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps
           </div>
           <div className="font-mono font-bold">
             <span className={hoveredDay.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
-              {hoveredDay.pnl >= 0 ? '+' : ''}{currency}{hoveredDay.pnl.toFixed(2)}
+              {hoveredDay.pnl >= 0 ? '+' : ''}{formatCurrency(hoveredDay.pnl)}
             </span>
           </div>
         </div>

@@ -1,20 +1,21 @@
 import { 
-  DollarSign, 
   Target, 
   Scale, 
   ShieldAlert, 
   Layers, 
-  Zap 
+  Zap,
+  TrendingUp
 } from 'lucide-react';
 import { PerformanceMetrics } from '../../types/trade';
 import { StatCard } from '../common/StatCard';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface MetricsGridProps {
   metrics: PerformanceMetrics;
-  currency?: string;
 }
 
-export function MetricsGrid({ metrics, currency = '$' }: MetricsGridProps) {
+export function MetricsGrid({ metrics }: MetricsGridProps) {
+  const { formatCurrency } = useCurrency();
   const isProfitable = metrics.netPnl >= 0;
   const pnlTone = metrics.netPnl > 0 ? 'profit' : metrics.netPnl < 0 ? 'loss' : 'neutral';
 
@@ -23,9 +24,9 @@ export function MetricsGrid({ metrics, currency = '$' }: MetricsGridProps) {
       {/* Net PnL */}
       <StatCard
         title="Net P&L"
-        value={`${isProfitable ? '+' : ''}${currency}${metrics.netPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-        subValue={`Gross Win: ${currency}${metrics.grossProfit.toLocaleString()} | Loss: -${currency}${metrics.grossLoss.toLocaleString()}`}
-        icon={<DollarSign className="w-4 h-4 text-indigo-500" />}
+        value={`${isProfitable && metrics.netPnl > 0 ? '+' : ''}${formatCurrency(metrics.netPnl)}`}
+        subValue={`Gross Win: ${formatCurrency(metrics.grossProfit)} | Loss: ${formatCurrency(-metrics.grossLoss)}`}
+        icon={<TrendingUp className="w-4 h-4 text-indigo-500" />}
         trend={metrics.netPnl > 0 ? 'up' : metrics.netPnl < 0 ? 'down' : 'neutral'}
         tone={pnlTone}
       />
@@ -52,7 +53,7 @@ export function MetricsGrid({ metrics, currency = '$' }: MetricsGridProps) {
       {/* Avg Win / Avg Loss */}
       <StatCard
         title="Avg Win / Loss"
-        value={`${currency}${metrics.avgWin.toFixed(0)} / ${currency}${metrics.avgLoss.toFixed(0)}`}
+        value={`${formatCurrency(metrics.avgWin)} / ${formatCurrency(metrics.avgLoss)}`}
         subValue={`Win/Loss Ratio: ${metrics.winLossRatio.toFixed(2)}x`}
         icon={<Zap className="w-4 h-4 text-cyan-500" />}
         tone={metrics.winLossRatio >= 1.5 ? 'profit' : 'neutral'}
@@ -61,7 +62,7 @@ export function MetricsGrid({ metrics, currency = '$' }: MetricsGridProps) {
       {/* Max Drawdown */}
       <StatCard
         title="Max Drawdown"
-        value={`-${currency}${metrics.maxDrawdown.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
+        value={`${formatCurrency(-metrics.maxDrawdown)}`}
         subValue={`Peak-to-Trough: -${metrics.maxDrawdownPercent}%`}
         icon={<ShieldAlert className="w-4 h-4 text-rose-500" />}
         tone="loss"

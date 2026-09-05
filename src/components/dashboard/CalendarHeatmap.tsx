@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Trade } from '../../types/trade';
 import { buildCalendarHeatmapData } from '../../lib/calculations';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Compass } from 'lucide-react';
 
 interface CalendarHeatmapProps {
   trades: Trade[];
@@ -9,9 +9,27 @@ interface CalendarHeatmapProps {
 }
 
 export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps) {
-  // Current active viewed month
-  const [currentDate, setCurrentDate] = useState(() => new Date());
+  // Find latest trade date to default or navigate to
+  const latestTradeDate = useMemo(() => {
+    const closed = trades.filter((t) => t.status === 'Closed');
+    if (closed.length === 0) return null;
+    const timestamps = closed
+      .map((t) => new Date(t.exitDate || t.entryDate).getTime())
+      .filter((t) => !isNaN(t));
+    if (timestamps.length === 0) return null;
+    return new Date(Math.max(...timestamps));
+  }, [trades]);
+
+  // Current active viewed month (defaults to latest trade month if available)
+  const [currentDate, setCurrentDate] = useState<Date>(() => latestTradeDate || new Date());
   const [hoveredDay, setHoveredDay] = useState<{ date: string; pnl: number; count: number } | null>(null);
+
+  // Sync viewed month when trades change or are imported
+  useEffect(() => {
+    if (latestTradeDate) {
+      setCurrentDate(latestTradeDate);
+    }
+  }, [latestTradeDate]);
 
   const heatmapData = useMemo(() => {
     return buildCalendarHeatmapData(trades);
@@ -24,6 +42,9 @@ export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const resetToToday = () => setCurrentDate(new Date());
+  const jumpToLatestTrade = () => {
+    if (latestTradeDate) setCurrentDate(latestTradeDate);
+  };
 
   // Generate calendar grid
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -52,6 +73,11 @@ export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps
     return { monthPnl, winningDays, losingDays, totalTrades };
   }, [heatmapData, year, month, daysInMonth]);
 
+  const hasTradesInMonth = monthlyMetrics.totalTrades > 0;
+  const isViewingDifferentMonthFromLatest =
+    latestTradeDate &&
+    (latestTradeDate.getFullYear() !== year || latestTradeDate.getMonth() !== month);
+
   const weekDayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
@@ -69,6 +95,18 @@ export function CalendarHeatmap({ trades, currency = '$' }: CalendarHeatmapProps
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Jump to latest trade button if viewing empty month */}
+          {!hasTradesInMonth && isViewingDifferentMonthFromLatest && (
+            <button
+              onClick={jumpToLatestTrade}
+              className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 font-medium cursor-pointer transition-colors"
+              title="Jump to month with trade activity"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Jump to Trades</span>
+            </button>
+          )}
+
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
             <button
               onClick={prevMonth}

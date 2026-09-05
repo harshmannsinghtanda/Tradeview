@@ -156,8 +156,11 @@ export default function App() {
     }
   };
 
-  const handleImportTrades = (newTrades: Trade[]) => {
+  const handleImportTrades = (newTrades: Trade[], overwrite: boolean = false) => {
     setTrades((prev) => {
+      if (overwrite) {
+        return newTrades;
+      }
       // deduplicate by id if matching
       const existingIds = new Set(prev.map((t) => t.id));
       const filteredNew = newTrades.filter((t) => !existingIds.has(t.id));

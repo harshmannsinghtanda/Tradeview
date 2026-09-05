@@ -166,7 +166,11 @@ export function buildCumulativePnlSeries(trades: Trade[]): {
   let rolling = 0;
   return closed.map((t) => {
     rolling += t.netPnl ?? 0;
-    const dateStr = (t.exitDate || t.entryDate).split('T')[0];
+    const raw = t.exitDate || t.entryDate;
+    const d = new Date(raw);
+    const dateStr = !isNaN(d.getTime())
+      ? d.toISOString().split('T')[0]
+      : String(raw).split('T')[0].split(' ')[0];
     return {
       date: dateStr,
       pnl: t.netPnl ?? 0,
@@ -184,7 +188,12 @@ export function buildCalendarHeatmapData(trades: Trade[]): Record<string, { pnl:
 
   trades.forEach((t) => {
     if (t.status === 'Closed' && t.netPnl !== undefined) {
-      const dateKey = (t.exitDate || t.entryDate).split('T')[0];
+      const raw = t.exitDate || t.entryDate;
+      const d = new Date(raw);
+      const dateKey = !isNaN(d.getTime())
+        ? d.toISOString().split('T')[0]
+        : String(raw).split('T')[0].split(' ')[0];
+
       if (!result[dateKey]) {
         result[dateKey] = { pnl: 0, count: 0 };
       }

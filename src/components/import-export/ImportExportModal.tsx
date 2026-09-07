@@ -53,14 +53,18 @@ export function ImportExportModal({
   const handleFileProcess = (file: File) => {
     setImportStatus(null);
 
-    if (!file.name.endsWith('.csv') && !file.name.endsWith('.json')) {
-      setImportStatus({ error: 'Please upload a valid .csv or .json backup file.' });
+    const nameLower = file.name.toLowerCase();
+    const isCsv = nameLower.endsWith('.csv') || file.type.includes('csv') || file.type.includes('comma-separated-values') || file.type === 'text/plain';
+    const isJson = nameLower.endsWith('.json') || file.type.includes('json');
+
+    if (!isCsv && !isJson) {
+      setImportStatus({ error: 'Please upload a valid .csv spreadsheet or .json backup file.' });
       return;
     }
 
     const reader = new FileReader();
 
-    if (file.name.endsWith('.json')) {
+    if (isJson) {
       reader.onload = (e) => {
         try {
           const parsed = JSON.parse(e.target?.result as string);
@@ -386,8 +390,7 @@ export function ImportExportModal({
                   onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
                   onDragLeave={() => setDragActive(false)}
                   onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-colors ${
+                  className={`relative p-6 border-2 border-dashed rounded-2xl text-center transition-colors cursor-pointer ${
                     dragActive
                       ? 'border-indigo-500 bg-indigo-500/10'
                       : 'border-slate-300 dark:border-slate-700 hover:border-indigo-400 bg-slate-50/50 dark:bg-slate-900/40'
@@ -396,24 +399,32 @@ export function ImportExportModal({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv,.json"
-                    className="hidden"
+                    accept=".csv,text/csv,text/plain,application/vnd.ms-excel,text/comma-separated-values,application/csv,.json,application/json"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         handleFileProcess(e.target.files[0]);
                       }
+                      // Reset value so selecting the same file again triggers onChange
+                      e.target.value = '';
                     }}
                   />
 
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto mb-2.5">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto mb-2.5 pointer-events-none">
                     <UploadCloud className="w-6 h-6" />
                   </div>
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                    Click to upload or drag & drop CSV file
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 pointer-events-none">
+                    Tap to select or drag & drop CSV file
                   </p>
-                  <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">
-                    Auto-detects Zerodha, Binance, MetaTrader 4/5, Interactive Brokers, and standard spreadsheets.
+                  <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto pointer-events-none">
+                    Universal support for Dhan, Zerodha, Groww, Angel One, Upstox, ICICI Direct, Kotak Neo, Binance, MetaTrader, and standard spreadsheets.
                   </p>
+                  <div className="mt-3.5 pointer-events-none">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-semibold shadow-sm">
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      Browse / Choose File
+                    </span>
+                  </div>
                 </div>
 
                 {/* Status Alert */}

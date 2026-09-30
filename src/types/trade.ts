@@ -16,6 +16,44 @@ export type TradeEmotion =
   | 'Overconfident' 
   | 'Boredom';
 
+export type BehavioralPatternFlag = 
+  | 'Revenge Trading'
+  | 'Overtrading Streak'
+  | 'Oversized Risk'
+  | 'Premature Exit'
+  | 'FOMO Chase';
+
+export const POPULAR_PATTERNS = [
+  // Candlestick Patterns
+  'Hammer / Pin Bar',
+  'Bullish Engulfing',
+  'Bearish Engulfing',
+  'Morning Star',
+  'Evening Star',
+  'Doji / Reversal',
+  'Inside Bar',
+  // Classical Chart Patterns
+  'Breakout & Retest',
+  'Double Bottom (W)',
+  'Double Top (M)',
+  'Head & Shoulders',
+  'Inverse Head & Shoulders',
+  'Bull Flag',
+  'Bear Flag',
+  'Ascending Triangle',
+  'Descending Triangle',
+  // Modern Market Structure / SMC
+  'Fair Value Gap (FVG)',
+  'Liquidity Sweep',
+  'Order Block',
+  'CHoCH (Change of Character)',
+  'Opening Range Breakout (ORB)',
+  'VWAP Pullback',
+  'Supply / Demand Flip'
+] as const;
+
+export type TradingPattern = typeof POPULAR_PATTERNS[number] | string;
+
 export interface Trade {
   id: string;
   symbol: string;               // e.g. BTC/USDT, AAPL, EUR/USD, NIFTY24OCTFUT
@@ -43,6 +81,8 @@ export interface Trade {
 
   // Context & Qualitative
   strategy: string;             // e.g. Breakout, Pullback, Supply/Demand, ICT, Scalp
+  patterns?: string[];          // Chart & Candlestick patterns identified
+  behavioralFlags?: BehavioralPatternFlag[]; // Auto-detected or manual behavioral habits
   emotion: TradeEmotion;
   rating?: number;              // 1 to 5 stars self-review execution rating
   notes?: string;               // Key reflections, entry reasoning
@@ -58,6 +98,7 @@ export interface TradeFiltersState {
   assetClass: AssetClass | 'All';
   direction: TradeDirection | 'All';
   status: TradeStatus | 'All';
+  pattern?: string;
   emotion: TradeEmotion | 'All';
   strategy: string;
   dateRange: 'All' | 'Today' | '7d' | '30d' | '90d' | 'YTD' | 'Custom';

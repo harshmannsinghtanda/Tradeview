@@ -159,7 +159,7 @@ export function TradeDetailModal({ trade, onClose, onEdit }: TradeDetailModalPro
               </div>
             )}
 
-            {/* Strategy & Emotion Tags */}
+            {/* Strategy & Emotion Tags & Patterns (V2) */}
             <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60 text-xs">
               <div className="flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5 text-indigo-500" />
@@ -174,6 +174,20 @@ export function TradeDetailModal({ trade, onClose, onEdit }: TradeDetailModalPro
                 <span className="text-slate-400 font-medium">Emotion:</span>
                 <EmotionBadge emotion={trade.emotion} />
               </div>
+
+              {trade.patterns && trade.patterns.length > 0 && (
+                <>
+                  <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-slate-400 font-medium">Patterns:</span>
+                    {trade.patterns.map((p) => (
+                      <span key={p} className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Notes & Lessons */}

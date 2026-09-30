@@ -11,19 +11,22 @@ import {
   Sparkles,
   Zap,
   IndianRupee,
-  DollarSign
+  DollarSign,
+  Database
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import { Button } from '../common/Button';
 
-export type NavTab = 'dashboard' | 'trades' | 'analytics';
+export type NavTab = 'dashboard' | 'trades' | 'analytics' | 'patterns';
 
 interface NavbarProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
   onOpenNewTrade: () => void;
   onOpenImportExport: () => void;
+  onOpenDatabaseSync?: () => void;
+  isDatabaseConnected?: boolean;
   onLoadSampleData?: () => void;
   hasTrades: boolean;
   isScalperMode: boolean;
@@ -35,6 +38,8 @@ export function Navbar({
   onTabChange,
   onOpenNewTrade,
   onOpenImportExport,
+  onOpenDatabaseSync,
+  isDatabaseConnected = false,
   onLoadSampleData,
   hasTrades,
   isScalperMode,
@@ -47,6 +52,7 @@ export function Navbar({
     { id: 'dashboard', label: 'Dashboard', icon: BarChart2 },
     { id: 'trades', label: 'Trade Log', icon: ListOrdered },
     { id: 'analytics', label: 'Psychology & Setups', icon: BrainCircuit },
+    { id: 'patterns', label: 'Pattern Lab', icon: Sparkles },
   ];
 
   const handleCurrencyClick = () => {
@@ -141,6 +147,23 @@ export function Navbar({
             >
               <span className="hidden md:inline">Data & CSV</span>
             </Button>
+
+            {/* Cloud Database Sync Button (V2) */}
+            {onOpenDatabaseSync && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenDatabaseSync}
+                className="px-2.5 sm:px-3 text-xs flex items-center gap-1.5"
+                title={isDatabaseConnected ? 'Supabase Database Connected' : 'Cloud Database Sync (Offline / Local)'}
+              >
+                <Database className={`w-3.5 h-3.5 ${isDatabaseConnected ? 'text-emerald-500' : 'text-slate-400'}`} />
+                <span className="hidden lg:inline">
+                  {isDatabaseConnected ? 'Cloud Sync' : 'Database'}
+                </span>
+                <span className={`w-1.5 h-1.5 rounded-full ${isDatabaseConnected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+              </Button>
+            )}
 
             {/* ⚡ Scalper Mode Toggle */}
             <button

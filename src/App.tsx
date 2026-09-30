@@ -28,8 +28,20 @@ import { TiltCircuitBreaker } from './components/trades/TiltCircuitBreaker';
 import { PsychologyAnalytics } from './components/analytics/PsychologyAnalytics';
 import { StrategyAnalytics } from './components/analytics/StrategyAnalytics';
 
+// Pattern Lab & Identification (V2)
+import { PatternLab } from './components/patterns/PatternLab';
+
 // Import / Export
 import { ImportExportModal } from './components/import-export/ImportExportModal';
+
+// Cloud Database (Supabase PostgreSQL) (V2)
+import { DatabaseSyncModal } from './components/database/DatabaseSyncModal';
+import { 
+  isSupabaseConfigured, 
+  getSupabaseConfig, 
+  upsertTradeToSupabase, 
+  deleteTradeFromSupabase 
+} from './lib/supabase';
 
 export default function App() {
   // Primary trade data state
@@ -68,6 +80,7 @@ export default function App() {
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
+  const [isDatabaseSyncOpen, setIsDatabaseSyncOpen] = useState(false);
 
   // Filters State
   const initialFilters: TradeFiltersState = {
@@ -118,6 +131,13 @@ export default function App() {
         return false;
       }
 
+      // Pattern (V2)
+      if (filters.pattern && filters.pattern !== 'All') {
+        if (!t.patterns || !t.patterns.includes(filters.pattern)) {
+          return false;
+        }
+      }
+
       return true;
     });
   }, [trades, filters]);
@@ -136,6 +156,15 @@ export default function App() {
     return Array.from(set);
   }, [trades]);
 
+  // Distinct technical patterns list for filtering dropdown (V2)
+  const uniquePatterns = useMemo(() => {
+    const set = new Set<string>();
+    trades.forEach((t) => {
+      (t.patterns || []).forEach((p) => set.add(p));
+    });
+    return Array.from(set);
+  }, [trades]);
+
   // Trade CRUD Handlers
   const handleSaveTrade = (trade: Trade) => {
     setTrades((prev) => {
@@ -148,11 +177,25 @@ export default function App() {
         return [trade, ...prev];
       }
     });
+
+    // Cloud auto-sync (Supabase) if enabled
+    if (isSupabaseConfigured()) {
+      const cfg = getSupabaseConfig();
+      if (cfg.autoSync) {
+        upsertTradeToSupabase(trade).catch(console.error);
+      }
+    }
   };
 
   const handleDeleteTrade = (tradeId: string) => {
     if (window.confirm('Delete this trade record?')) {
       setTrades((prev) => prev.filter((t) => t.id !== tradeId));
+      if (isSupabaseConfigured()) {
+        const cfg = getSupabaseConfig();
+        if (cfg.autoSync) {
+          deleteTradeFromSupabase(tradeId).catch(console.error);
+        }
+      }
     }
   };
 
@@ -188,6 +231,8 @@ export default function App() {
           setIsTradeModalOpen(true);
         }}
         onOpenImportExport={() => setIsImportExportOpen(true)}
+        onOpenDatabaseSync={() => setIsDatabaseSyncOpen(true)}
+        isDatabaseConnected={isSupabaseConfigured()}
         onLoadSampleData={handleLoadSampleData}
         hasTrades={trades.length > 0}
         isScalperMode={isScalperMode}
@@ -263,6 +308,7 @@ export default function App() {
               onChange={(updated) => setFilters((prev) => ({ ...prev, ...updated }))}
               onReset={() => setFilters(initialFilters)}
               strategies={uniqueStrategies}
+              patterns={uniquePatterns}
             />
 
             <TradeTable
@@ -286,6 +332,20 @@ export default function App() {
           <div className="space-y-6 animate-in fade-in duration-200">
             <PsychologyAnalytics trades={filteredTrades} />
             <StrategyAnalytics trades={filteredTrades} />
+          </div>
+        )}
+
+        {/* Tab 4: Pattern Lab (Trading Pattern Identification) (V2) */}
+        {activeTab === 'patterns' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <PatternLab 
+              trades={trades}
+              onSelectPatternFilter={(pattern) => {
+                setFilters((prev) => ({ ...prev, pattern }));
+                setActiveTab('trades');
+              }}
+              onViewTrade={(t) => setViewingTrade(t)}
+            />
           </div>
         )}
 
@@ -333,6 +393,14 @@ export default function App() {
         onImportTrades={handleImportTrades}
         onLoadSampleTrades={handleLoadSampleData}
         onClearTrades={handleClearAllTrades}
+      />
+
+      {/* Cloud Database Sync Modal (Supabase PostgreSQL) (V2) */}
+      <DatabaseSyncModal
+        isOpen={isDatabaseSyncOpen}
+        onClose={() => setIsDatabaseSyncOpen(false)}
+        trades={trades}
+        onTradesUpdated={(updated) => setTrades(updated)}
       />
 
     </div>

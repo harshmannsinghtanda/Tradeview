@@ -7,7 +7,8 @@ import {
   AssetClass, 
   TradeDirection, 
   TradeStatus, 
-  TradeEmotion 
+  TradeEmotion,
+  POPULAR_PATTERNS
 } from '../../types/trade';
 import { calculateTradeFinancials } from '../../lib/calculations';
 import { Button } from '../common/Button';
@@ -45,6 +46,8 @@ export function TradeFormModal({
 
   const [strategy, setStrategy] = useState('Breakout');
   const [customStrategy, setCustomStrategy] = useState('');
+  const [patterns, setPatterns] = useState<string[]>([]);
+  const [newPatternInput, setNewPatternInput] = useState('');
   const [emotion, setEmotion] = useState<TradeEmotion>('Disciplined');
   const [notes, setNotes] = useState('');
   const [lessons, setLessons] = useState('');
@@ -65,6 +68,7 @@ export function TradeFormModal({
       setTakeProfit(initialTrade.takeProfit ? String(initialTrade.takeProfit) : '');
       setFees(String(initialTrade.fees || 0));
       setStrategy(initialTrade.strategy || 'Breakout');
+      setPatterns(initialTrade.patterns || []);
       setEmotion(initialTrade.emotion || 'Disciplined');
       setNotes(initialTrade.notes || '');
       setLessons(initialTrade.lessons || '');
@@ -85,6 +89,8 @@ export function TradeFormModal({
       setFees('0');
       setStrategy('Breakout');
       setCustomStrategy('');
+      setPatterns([]);
+      setNewPatternInput('');
       setEmotion('Disciplined');
       setNotes('');
       setLessons('');
@@ -102,6 +108,22 @@ export function TradeFormModal({
       stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
     });
   }, [entryPrice, exitPrice, quantity, fees, direction, stopLoss, status]);
+
+  const togglePattern = (pattern: string) => {
+    setPatterns((prev) => 
+      prev.includes(pattern) ? prev.filter((p) => p !== pattern) : [...prev, pattern]
+    );
+  };
+
+  const handleAddCustomPattern = (e: React.KeyboardEvent | React.MouseEvent) => {
+    if ('key' in e && e.key !== 'Enter') return;
+    e.preventDefault();
+    const trimmed = newPatternInput.trim();
+    if (trimmed && !patterns.includes(trimmed)) {
+      setPatterns((prev) => [...prev, trimmed]);
+      setNewPatternInput('');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +155,7 @@ export function TradeFormModal({
       pnlPercentage: financials.pnlPercentage,
       rMultiple: financials.rMultiple,
       strategy: customStrategy.trim() || strategy,
+      patterns,
       emotion,
       notes: notes.trim(),
       lessons: lessons.trim(),
@@ -474,6 +497,60 @@ export function TradeFormModal({
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs focus:ring-2 focus:ring-indigo-500/50 outline-none"
                   />
                 )}
+              </div>
+            </div>
+
+            {/* Trading Pattern Identification Picker (V2) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Identified Patterns (Candlestick / Chart / SMC)
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  {patterns.length} selected
+                </span>
+              </div>
+
+              {/* Quick Popular Pattern Chips */}
+              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                {POPULAR_PATTERNS.map((pat) => {
+                  const isSelected = patterns.includes(pat);
+                  return (
+                    <button
+                      key={pat}
+                      type="button"
+                      onClick={() => togglePattern(pat)}
+                      className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60'
+                      }`}
+                    >
+                      {isSelected ? '✓ ' : '+ '}
+                      {pat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Add Custom Pattern Input */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Or type custom pattern (e.g. 3-Drive, Turtle Soup)..."
+                  value={newPatternInput}
+                  onChange={(e) => setNewPatternInput(e.target.value)}
+                  onKeyDown={handleAddCustomPattern}
+                  className="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/50 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomPattern}
+                  disabled={!newPatternInput.trim()}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 cursor-pointer"
+                >
+                  Add
+                </button>
               </div>
             </div>
 

@@ -16,6 +16,7 @@ interface RawSampleTrade {
   takeProfit?: number;
   fees: number;
   strategy: string;
+  patterns?: string[];
   emotion: 'Disciplined' | 'Patient' | 'Calm' | 'FOMO' | 'Revenge' | 'Hesitant' | 'Greedy' | 'Fearful' | 'Overconfident' | 'Boredom';
   rating?: number;
   notes?: string;
@@ -40,6 +41,7 @@ const RAW_SAMPLES: RawSampleTrade[] = [
     takeProfit: 132.00,
     fees: 2.50,
     strategy: 'Earnings Momentum',
+    patterns: ['Breakout & Retest', 'Bull Flag'],
     emotion: 'Disciplined',
     rating: 5,
     notes: 'Clean continuation above opening range high after strong datacenter guidance.',
@@ -62,6 +64,7 @@ const RAW_SAMPLES: RawSampleTrade[] = [
     takeProfit: 65000,
     fees: 12.40,
     strategy: 'Daily Demand Zone',
+    patterns: ['Liquidity Sweep', 'Fair Value Gap (FVG)', 'Hammer / Pin Bar'],
     emotion: 'Patient',
     rating: 5,
     notes: 'Waited for 4H sweep of liquidity below weekly low. Immediate impulse candle confirmation.',
@@ -84,6 +87,7 @@ const RAW_SAMPLES: RawSampleTrade[] = [
     takeProfit: 212.00,
     fees: 3.00,
     strategy: 'Gap & Crap Fade',
+    patterns: ['Double Top (M)', 'FOMO Chase'],
     emotion: 'FOMO',
     rating: 2,
     notes: 'Entered too early without waiting for 15m rejection candle. Slipped past my stop loss.',
@@ -106,6 +110,7 @@ const RAW_SAMPLES: RawSampleTrade[] = [
     takeProfit: 1.0810,
     fees: 6.00,
     strategy: 'London Session Breakout',
+    patterns: ['Breakout & Retest', 'Bearish Engulfing'],
     emotion: 'Calm',
     rating: 4,
     notes: 'ECB dovish comments triggered sharp dollar surge during London open.',
@@ -128,6 +133,7 @@ const RAW_SAMPLES: RawSampleTrade[] = [
     takeProfit: 19950,
     fees: 8.50,
     strategy: 'ICT Fair Value Gap',
+    patterns: ['Fair Value Gap (FVG)'],
     emotion: 'Revenge',
     rating: 1,
     notes: 'Tried to catch a falling knife right before Fed speech. Violated daily rule of max 2 trades.',
@@ -150,6 +156,7 @@ const RAW_SAMPLES: RawSampleTrade[] = [
     takeProfit: 158.00,
     fees: 7.20,
     strategy: 'Bull Flag Breakout',
+    patterns: ['Bull Flag', 'Breakout & Retest', 'Hammer / Pin Bar'],
     emotion: 'Disciplined',
     rating: 5,
     notes: 'Clean multi-day consolidation break with rising spot volume.',
@@ -172,6 +179,7 @@ const RAW_SAMPLES: RawSampleTrade[] = [
     takeProfit: 234.00,
     fees: 2.00,
     strategy: 'VWAP Reclaim',
+    patterns: ['VWAP Pullback', 'Bullish Engulfing'],
     emotion: 'Calm',
     rating: 4,
     notes: 'Market opened weak, tech names caught bids at 200 EMA on 1H chart.',
@@ -192,6 +200,7 @@ const RAW_SAMPLES: RawSampleTrade[] = [
     takeProfit: 2680,
     fees: 4.50,
     strategy: 'Weekly Key Level Bounce',
+    patterns: ['Double Bottom (W)', 'Hammer / Pin Bar'],
     emotion: 'Disciplined',
     notes: 'Swing position targeting previous range highs. Currently holding.',
     createdAt: Date.now() - 1 * 86400000,

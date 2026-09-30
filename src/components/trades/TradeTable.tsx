@@ -11,6 +11,7 @@ import { Trade } from '../../types/trade';
 import { DirectionBadge, StatusBadge, AssetBadge, EmotionBadge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { useCurrency } from '../../context/CurrencyContext';
+import { detectBehavioralFlags } from '../../lib/pattern-detector';
 
 interface TradeTableProps {
   trades: Trade[];
@@ -35,6 +36,8 @@ export function TradeTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [page, setPage] = useState(1);
   const pageSize = 15;
+
+  const behavioralMap = useMemo(() => detectBehavioralFlags(trades), [trades]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -240,14 +243,40 @@ export function TradeTable({
                     )}
                   </td>
 
-                  {/* Setup & Emotion */}
+                  {/* Setup, Patterns & Emotion (V2) */}
                   <td className="py-3 px-4 whitespace-nowrap">
-                    <div className="flex flex-col gap-1 items-start">
-                      <span className="text-slate-800 dark:text-slate-200 font-medium">
-                        {t.strategy || 'General'}
-                      </span>
-                      <EmotionBadge emotion={t.emotion} />
-                    </div>
+                    {(() => {
+                      const flags = behavioralMap.get(t.id) || [];
+                      return (
+                        <div className="flex flex-col gap-1 items-start">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-slate-800 dark:text-slate-200 font-medium">
+                              {t.strategy || 'General'}
+                            </span>
+                            {flags.length > 0 && (
+                              <span 
+                                title={`Auto-Detected: ${flags.join(', ')}`}
+                                className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                              >
+                                ⚠ {flags[0]}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <EmotionBadge emotion={t.emotion} />
+                            {t.patterns && t.patterns.length > 0 && (
+                              <span 
+                                className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20"
+                                title={t.patterns.join(', ')}
+                              >
+                                {t.patterns[0]}
+                                {t.patterns.length > 1 && ` +${t.patterns.length - 1}`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </td>
 
                   {/* Status */}

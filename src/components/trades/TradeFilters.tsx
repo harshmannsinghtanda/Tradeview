@@ -6,9 +6,10 @@ interface TradeFiltersProps {
   onChange: (updated: Partial<TradeFiltersState>) => void;
   onReset: () => void;
   strategies: string[];
+  patterns?: string[];
 }
 
-export function TradeFilters({ filters, onChange, onReset, strategies }: TradeFiltersProps) {
+export function TradeFilters({ filters, onChange, onReset, strategies, patterns = [] }: TradeFiltersProps) {
   const assetClasses: (AssetClass | 'All')[] = ['All', 'Crypto', 'Stocks', 'Forex', 'Futures', 'Options'];
   const directions: (TradeDirection | 'All')[] = ['All', 'Long', 'Short'];
   const statuses: (TradeStatus | 'All')[] = ['All', 'Closed', 'Open'];
@@ -30,7 +31,8 @@ export function TradeFilters({ filters, onChange, onReset, strategies }: TradeFi
     filters.direction !== 'All' ||
     filters.status !== 'All' ||
     filters.emotion !== 'All' ||
-    filters.strategy !== 'All';
+    filters.strategy !== 'All' ||
+    (filters.pattern !== undefined && filters.pattern !== 'All');
 
   return (
     <div className="glass-panel rounded-2xl p-4 border border-slate-200 dark:border-slate-800/80 shadow-sm space-y-3">
@@ -138,6 +140,23 @@ export function TradeFilters({ filters, onChange, onReset, strategies }: TradeFi
             <option value="All">All Setups</option>
             {strategies.map((st) => (
               <option key={st} value={st}>{st}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Technical Pattern */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            Pattern (V2)
+          </label>
+          <select
+            value={filters.pattern || 'All'}
+            onChange={(e) => onChange({ pattern: e.target.value })}
+            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          >
+            <option value="All">All Patterns</option>
+            {patterns.map((pat) => (
+              <option key={pat} value={pat}>{pat}</option>
             ))}
           </select>
         </div>

@@ -853,6 +853,7 @@ export function parseTradesFromCsv(csvContent: string): ParseCsvResult {
         pnlPercentage: Number(pnlPercentage.toFixed(2)),
         rMultiple,
         strategy: brokerDetected !== 'Standard / Universal CSV' ? `${brokerDetected} Import` : 'General Setup',
+        patterns: [],
         emotion: 'Disciplined',
         notes: `Imported from ${brokerDetected}${currentSectionSegment !== 'Equity' ? ` (${currentSectionSegment})` : ''}`,
         createdAt: Date.now(),

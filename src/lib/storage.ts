@@ -111,6 +111,7 @@ export function exportTradesToCsv(trades: Trade[]): void {
     'PnL%',
     'RMultiple',
     'Strategy',
+    'Patterns',
     'Emotion',
     'Notes'
   ];
@@ -133,6 +134,7 @@ export function exportTradesToCsv(trades: Trade[]): void {
     t.pnlPercentage ?? '',
     t.rMultiple ?? '',
     `"${(t.strategy || '').replace(/"/g, '""')}"`,
+    `"${(t.patterns ? t.patterns.join('; ') : '').replace(/"/g, '""')}"`,
     t.emotion,
     `"${(t.notes || '').replace(/"/g, '""')}"`
   ]);

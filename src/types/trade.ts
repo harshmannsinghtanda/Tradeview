@@ -21,7 +21,10 @@ export type BehavioralPatternFlag =
   | 'Overtrading Streak'
   | 'Oversized Risk'
   | 'Premature Exit'
-  | 'FOMO Chase';
+  | 'FOMO Chase'
+  | 'Zombie Bag-Holding'
+  | 'Midday Chop Trap'
+  | 'Martingale Escalation';
 
 export const POPULAR_PATTERNS = [
   // Candlestick Patterns
